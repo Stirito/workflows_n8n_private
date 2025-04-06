@@ -1,0 +1,944 @@
+{
+  "name": "Email Setup",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "labelIds": [
+            "INBOX"
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1260,
+        220
+      ],
+      "id": "68d397de-ec42-4894-b912-42e2ae240a23",
+      "name": "malory",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1420,
+        340
+      ],
+      "id": "85e83ac7-1668-49c4-a37e-27ea90e905bf",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        2280,
+        200
+      ],
+      "id": "3c6a3a61-0c46-4c68-b1a4-5de6a32cbfb4",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ $json.id }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -500,
+        220
+      ],
+      "id": "95dbe4a1-8256-4415-a8ec-53e6754984c0",
+      "name": "Mark as Read",
+      "webhookId": "5e5e9ef3-c42e-4474-bdf0-6404ecf5c005",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "thread",
+        "operation": "get",
+        "threadId": "={{ $json.threadId }}",
+        "simple": false,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -180,
+        340
+      ],
+      "id": "e2095e6d-cf22-4fa9-96da-d5c92bc18a8d",
+      "name": "Get Thread",
+      "webhookId": "0785b14d-8ed5-40d4-87df-e10e31c0895f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "44d3d98f-ae45-4539-b298-d5209314b25e",
+              "name": "from",
+              "value": "={{ $json.headers.from }}",
+              "type": "string"
+            },
+            {
+              "id": "c1c20f0a-4900-41d2-a028-92c66b2c3a5a",
+              "name": "date",
+              "value": "={{ $json.headers.date }}",
+              "type": "string"
+            },
+            {
+              "id": "3dbf83e9-d29c-4831-bd4a-0c7131811295",
+              "name": "to",
+              "value": "={{ $json.headers.to }}",
+              "type": "string"
+            },
+            {
+              "id": "50019a41-f699-4093-a47a-68c6487990fb",
+              "name": "cc",
+              "value": "={{$json.headers.cc}}",
+              "type": "string"
+            },
+            {
+              "id": "167482f2-bc00-4c6b-b893-8dad367601af",
+              "name": "text",
+              "value": "={{\n$json.html }}",
+              "type": "string"
+            },
+            {
+              "id": "bd9c15d3-a6b7-429f-91fb-13c661441f06",
+              "name": "id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "0ebc5705-fca0-41db-976f-53ec43e0eeb4",
+              "name": "threadId",
+              "value": "={{ $json.threadId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        920,
+        340
+      ],
+      "id": "1344a7da-477d-438d-972c-746d38e654ad",
+      "name": "Set Values"
+    },
+    {
+      "parameters": {
+        "jsCode": "// On récupère la liste des messages (ici, on s'attend à ce que chaque message possède une propriété \"html\"\n// contenant le message au format HTML. Sinon, on peut utiliser message.text s'il est déjà en HTML.)\nconst messages = $input.first().json.data;\nlet messageHistory = \"\";\n\nmessages.forEach((message, index) => {\n  // Utiliser le contenu HTML si présent, sinon le contenu texte\n  let htmlContent = message.html || message.text;\n  \n  // Suppression de la partie citée souvent encapsulée dans <blockquote>...</blockquote>\n  htmlContent = htmlContent.replace(/<blockquote[\\s\\S]*?<\\/blockquote>/gi, \"\");\n  \n  // Supprimer également les blocs de Gmail (souvent identifiés par la classe \"gmail_quote\")\n  htmlContent = htmlContent.replace(/<div\\s+class=[\"']?gmail_quote[\"']?[\\s\\S]*?<\\/div>/gi, \"\");\n  \n  // Conversion du HTML restant en texte brut en supprimant toutes les balises HTML\n  const plainText = htmlContent.replace(/<[^>]+>/g, '').trim();\n  \n  // Formatage du message\n  messageHistory += `Message ${index}\\n`;\n  messageHistory += `${message.from}\\n`;\n  messageHistory += `${message.date}\\n`;\n  messageHistory += `Contenu : ${plainText}\\n`;\n  messageHistory += `---------------\\n`;\n});\n\nreturn { messageHistory };\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        340
+      ],
+      "id": "60d3c47d-cce4-486f-9759-1cb2ad318967",
+      "name": "Reformat"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        2480,
+        200
+      ],
+      "id": "685f573c-2553-48ab-a4de-aeb52079d82f",
+      "name": "Aggregate1"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "LY2yKjOlB5PvyPfk",
+          "mode": "list",
+          "cachedResultName": "MALLORY"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "contexte": "={{ $json.contexte }}",
+            "contenu": "={{ $json.contenu }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "contexte",
+              "displayName": "contexte",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object"
+            },
+            {
+              "id": "contenu",
+              "displayName": "contenu",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2900,
+        200
+      ],
+      "id": "7307a235-31d6-4579-a4f9-18a4a2c87d27",
+      "name": "Execute Workflow"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "acc8801e-4d39-4a2f-b56c-be6912b3f18f",
+              "name": "threadId",
+              "value": "={{ $json.threadId }}",
+              "type": "string"
+            },
+            {
+              "id": "8cfa4ad3-fe9b-424c-a4ef-b6dd03741372",
+              "name": "messageId",
+              "value": "={{ $('malory').item.json.headers['message-id'] }}",
+              "type": "string"
+            },
+            {
+              "id": "040c0378-00b3-4d0b-9779-280c2128288f",
+              "name": "sujet",
+              "value": "={{ $('malory').item.json.subject }}",
+              "type": "string"
+            },
+            {
+              "id": "5a567866-8986-40a2-9667-097439a485a3",
+              "name": "destinataire",
+              "value": "={{ $('malory').item.json.to.value[0].address }}",
+              "type": "string"
+            },
+            {
+              "id": "56bbe669-4053-4017-a1fa-fd06dfe972fa",
+              "name": "contenu",
+              "value": "={{ $('malory').item.json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -340,
+        340
+      ],
+      "id": "19d0b123-bef1-4c8a-abd7-951a98effc74",
+      "name": "Incoming Values"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "67653682-790c-4967-b373-6e38a11a70f2",
+              "name": "Messages",
+              "value": "={{ $json.messages}}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        20,
+        340
+      ],
+      "id": "ea8c9ad8-0711-4534-8051-851ee5f1072c",
+      "name": "Extraire Thread"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "messageId": "={{ $json.id }}",
+        "simple": false,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        480,
+        340
+      ],
+      "id": "945abda9-d93d-4953-ae81-552bd1f302ec",
+      "name": "Get Full Messages",
+      "webhookId": "cc4d7e2a-15c9-4c91-8ecb-a6f5ec673f52",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "Messages",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        240,
+        340
+      ],
+      "id": "fd8933e5-8afb-473d-9c0d-2526f63f2bfc",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2fb466a8-5d20-45e0-abfd-1d8b6d42eb8b",
+              "name": "contexte.historique_message",
+              "value": "={{ $json.data[1].messageHistory }}",
+              "type": "string"
+            },
+            {
+              "id": "d14f6d03-f0bd-4929-9a94-729a9f91d006",
+              "name": "contenu.threadId",
+              "value": "={{ $json.data[0].threadId }}",
+              "type": "string"
+            },
+            {
+              "id": "52953ff3-0a45-4e3a-9e5d-2044494d1fe2",
+              "name": "contenu.id",
+              "value": "={{ $json.data[0].id }}",
+              "type": "string"
+            },
+            {
+              "id": "cbedcf48-6049-4799-9361-702e0159e09a",
+              "name": "contenu.from",
+              "value": "={{ $json.data[0].from }}",
+              "type": "string"
+            },
+            {
+              "id": "76bad8c7-eeb4-40bf-b4c5-a18788bc79e4",
+              "name": "contenu.sujet",
+              "value": "={{ $json.data[0].sujet }}",
+              "type": "string"
+            },
+            {
+              "id": "66bca498-2fbe-44fa-9c6a-37feaf20204d",
+              "name": "contenu.to",
+              "value": "={{ $json.data[0].to }}",
+              "type": "string"
+            },
+            {
+              "id": "5ed7c750-d33f-481f-af07-ec55fe3123f5",
+              "name": "contenu.cc",
+              "value": "={{ $json.data[0].cc }}",
+              "type": "string"
+            },
+            {
+              "id": "e727ee55-65bc-4ac0-a0e8-5ee3a69b6109",
+              "name": "contenu.text",
+              "value": "={{ $json.data[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2680,
+        200
+      ],
+      "id": "022d0fcb-921b-42b2-a2ae-1b1c89b312e2",
+      "name": "Contenu et Contexte"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "65cfc032-b46e-49b5-ad25-d6c6ddfbf74a",
+              "name": "from",
+              "value": "={{ $('malory').first().json.headers.from }}",
+              "type": "string"
+            },
+            {
+              "id": "78c55e81-06f5-4042-ac74-a9d3409c00a9",
+              "name": "to",
+              "value": "={{ $('malory').first().json.headers.to }}",
+              "type": "string"
+            },
+            {
+              "id": "e41812ca-2c68-4e01-8ce1-236f9546bfd5",
+              "name": "sujet",
+              "value": "={{ $('malory').first().json.headers.subject }}",
+              "type": "string"
+            },
+            {
+              "id": "c09367f6-e71b-4c87-9a2f-4e0d78b30e1a",
+              "name": "cc",
+              "value": "={{ $('malory').first().json.cc}}",
+              "type": "string"
+            },
+            {
+              "id": "7ed66628-e1db-4edc-9a23-e3a146906994",
+              "name": "text",
+              "value": "={{ $('malory').first().json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "a88eb146-9608-4095-9576-ad702a9cb427",
+              "name": "id",
+              "value": "={{ $('malory').first().json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "d3b71891-6aa5-4791-b0ff-f206dda05815",
+              "name": "threadId",
+              "value": "={{ $('malory').first().json.threadId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        -60
+      ],
+      "id": "9a4a775c-cd42-4ae5-b549-b8e31091642e",
+      "name": "Valeurs Nouveau Mail"
+    },
+    {
+      "parameters": {
+        "inputText": "={{ $json.text }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "Clients",
+              "description": "Toute les requêtes concernant des demandes clients"
+            },
+            {
+              "category": "Fournisseurs",
+              "description": "Concerne toutes les demandes de fournisseurs"
+            },
+            {
+              "category": "Newsletter BTP",
+              "description": "Toutes les newsletters concernant le BTP"
+            },
+            {
+              "category": "Veille Technologique",
+              "description": "Tout ce qui concerne de la veille technogique."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1,
+      "position": [
+        -1040,
+        220
+      ],
+      "id": "5b5b3cac-0ed4-458a-995b-c5d53a416b3b",
+      "name": "Text Classifier"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.1,
+      "position": [
+        -1080,
+        420
+      ],
+      "id": "c5701a39-5680-4a51-90e9-9afcea0bc080",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "Vm2aEK1EsphLWx7X",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "thread",
+        "operation": "addLabels",
+        "threadId": "={{ $json.threadId }}",
+        "labelIds": [
+          "Label_3219156996552744523"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -680,
+        -120
+      ],
+      "id": "6c85d4ae-898d-438e-ba6b-4211d70da1df",
+      "name": "Gmail",
+      "webhookId": "1db99b5c-fe21-4dac-9f66-59b49525ec2f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "thread",
+        "operation": "addLabels",
+        "threadId": "={{ $json.threadId }}",
+        "labelIds": [
+          "Label_1874948089722664587"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -680,
+        60
+      ],
+      "id": "8210f92e-9144-44dd-913f-1c54e3596a28",
+      "name": "Gmail1",
+      "webhookId": "1db99b5c-fe21-4dac-9f66-59b49525ec2f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "thread",
+        "operation": "addLabels",
+        "threadId": "={{ $json.threadId }}",
+        "labelIds": [
+          "Label_1729404859547270508"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -680,
+        240
+      ],
+      "id": "48493db2-2103-466c-8d43-2275dfe118a1",
+      "name": "Gmail2",
+      "webhookId": "1db99b5c-fe21-4dac-9f66-59b49525ec2f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "thread",
+        "operation": "addLabels",
+        "threadId": "={{ $json.threadId }}",
+        "labelIds": [
+          "Label_5220822921438563613"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -680,
+        420
+      ],
+      "id": "758f75be-4c3f-4d63-b029-6ee17c362ec3",
+      "name": "Gmail3",
+      "webhookId": "1db99b5c-fe21-4dac-9f66-59b49525ec2f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "malory": [
+      {
+        "json": {
+          "id": "194d1e16e3300d11",
+          "threadId": "194d1e12e922ec8f",
+          "labelIds": [
+            "UNREAD",
+            "IMPORTANT",
+            "SENT",
+            "INBOX"
+          ],
+          "sizeEstimate": 1436,
+          "headers": {
+            "mime-version": "MIME-Version: 1.0",
+            "date": "Date: Tue, 4 Feb 2025 17:53:16 +0100",
+            "message-id": "Message-ID: <CALxoYXz48j0haAX6mkyimosi=u6+Gz3f3t311EVEx=itxp6xjw@mail.gmail.com>",
+            "subject": "Subject: =?UTF-8?Q?Installation_=E2=80=93_Borne_de_recharge?=",
+            "from": "From: Benoit Ferrere <benoit.ferrere11@gmail.com>",
+            "to": "To: Benoit Ferrere <benoit.ferrere11@gmail.com>",
+            "content-type": "Content-Type: multipart/alternative; boundary=\"0000000000009ba802062d53d829\""
+          },
+          "html": "<div dir=\"ltr\"><p>Bonjour,</p><p>Je souhaite installer une borne de recharge pour mon véhicule électrique à mon domicile. Merci de bien vouloir m’envoyer une proposition de devis et de convenir d’un rendez-vous pour évaluer le chantier.</p><p>Adresse d’installation :<br>1 Rue Puységur<br>33000 Bordeaux</p><p>Cordialement,<br>Benoit</p></div>\n",
+          "text": "Bonjour,\n\nJe souhaite installer une borne de recharge pour mon véhicule électrique à\nmon domicile. Merci de bien vouloir m’envoyer une proposition de devis et\nde convenir d’un rendez-vous pour évaluer le chantier.\n\nAdresse d’installation :\n1 Rue Puységur\n33000 Bordeaux\n\nCordialement,\nBenoit\n",
+          "textAsHtml": "<p>Bonjour,</p><p>Je souhaite installer une borne de recharge pour mon v&eacute;hicule &eacute;lectrique &agrave;<br/>mon domicile. Merci de bien vouloir m&rsquo;envoyer une proposition de devis et<br/>de convenir d&rsquo;un rendez-vous pour &eacute;valuer le chantier.</p><p>Adresse d&rsquo;installation :<br/>1 Rue Puys&eacute;gur<br/>33000 Bordeaux</p><p>Cordialement,<br/>Benoit</p>",
+          "subject": "Installation – Borne de recharge",
+          "date": "2025-02-04T16:53:16.000Z",
+          "to": {
+            "value": [
+              {
+                "address": "benoit.ferrere11@gmail.com",
+                "name": "Benoit Ferrere"
+              }
+            ],
+            "html": "<span class=\"mp_address_group\"><span class=\"mp_address_name\">Benoit Ferrere</span> &lt;<a href=\"mailto:benoit.ferrere11@gmail.com\" class=\"mp_address_email\">benoit.ferrere11@gmail.com</a>&gt;</span>",
+            "text": "\"Benoit Ferrere\" <benoit.ferrere11@gmail.com>"
+          },
+          "from": {
+            "value": [
+              {
+                "address": "benoit.ferrere11@gmail.com",
+                "name": "Benoit Ferrere"
+              }
+            ],
+            "html": "<span class=\"mp_address_group\"><span class=\"mp_address_name\">Benoit Ferrere</span> &lt;<a href=\"mailto:benoit.ferrere11@gmail.com\" class=\"mp_address_email\">benoit.ferrere11@gmail.com</a>&gt;</span>",
+            "text": "\"Benoit Ferrere\" <benoit.ferrere11@gmail.com>"
+          },
+          "messageId": "<CALxoYXz48j0haAX6mkyimosi=u6+Gz3f3t311EVEx=itxp6xjw@mail.gmail.com>"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "malory": {
+      "main": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Reformat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark as Read": {
+      "main": [
+        [
+          {
+            "node": "Incoming Values",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Valeurs Nouveau Mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Thread": {
+      "main": [
+        [
+          {
+            "node": "Extraire Thread",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Values": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reformat": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Aggregate1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate1": {
+      "main": [
+        [
+          {
+            "node": "Contenu et Contexte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Incoming Values": {
+      "main": [
+        [
+          {
+            "node": "Get Thread",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraire Thread": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Full Messages": {
+      "main": [
+        [
+          {
+            "node": "Set Values",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Get Full Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contenu et Contexte": {
+      "main": [
+        [
+          {
+            "node": "Execute Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valeurs Nouveau Mail": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Classifier": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gmail1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gmail2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gmail3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail": {
+      "main": [
+        [
+          {
+            "node": "Mark as Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail1": {
+      "main": [
+        [
+          {
+            "node": "Mark as Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail2": {
+      "main": [
+        [
+          {
+            "node": "Mark as Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail3": {
+      "main": [
+        [
+          {
+            "node": "Mark as Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f08be020-346d-467a-9af2-d212a99662db",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3c2ea20af5bac13bd16313e89630741b71c0832df524fb17e56957cfeb36ac2a"
+  },
+  "id": "P1OAbqvDX3bullrc",
+  "tags": [
+    {
+      "createdAt": "2025-02-02T16:12:46.338Z",
+      "updatedAt": "2025-02-02T16:12:46.338Z",
+      "id": "pgPPv7eGCTdusX4U",
+      "name": "Projet BRUCELEC"
+    }
+  ]
+}

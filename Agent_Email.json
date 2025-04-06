@@ -1,0 +1,965 @@
+{
+  "name": "Agent Email PROJET BRUCELEC",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "contexte"
+            },
+            {
+              "name": "email_metadata",
+              "type": "any"
+            }
+          ]
+        }
+      },
+      "id": "c055762a-8fe7-4141-a639-df2372f30060",
+      "typeVersion": 1.1,
+      "name": "Workflow Input Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        260,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Action : \n{{ $json.action }}\n\nContexte :\n{{ $json.contexte }}\n\nEmail metadata : \n{{ $json.email_metadata }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=SYSTEME\nL'agent IA agit en tant que gestionnaire centralisé des emails de l'entreprise, ayant accès à l'ensemble des outils Gmail via n8n. Il est chargé de piloter, orchestrer et exécuter des actions sur les emails (envoi, réponse, récupération, suppression, gestion des labels, gestion des brouillons et threads) de manière automatique et sécurisée. L'agent doit opérer en conformité avec les règles de sécurité et confidentialité de l'entreprise.\n\nOBJECTIFS\n- Gérer efficacement toutes les actions liées aux emails de l'entreprise.\n- Automatiser l'envoi, la réponse, la récupération, la suppression et la gestion des emails, labels, brouillons et threads.\n- Offrir une interface cohérente et séquencée pour l'exécution des tâches, garantissant un traitement fiable et précis des demandes.\n\nCONTEXTE\nL'agent IA opère dans le cadre de la gestion des emails d'une entreprise du secteur de l'électricité. L'environnement inclut la gestion quotidienne des communications internes et externes, avec un accent sur la rapidité de traitement et la sécurité des échanges. Le système doit s'adapter aux divers scénarios et métadonnées associées aux emails (expéditeur, destinataire, date, sujet, etc.) tout en assurant la continuité des opérations.\n\nETAPES\n1. **Réception et Analyse de la Demande**\n   - Collecter le contexte et les métadonnées de l'email ou de la demande (contexte + email_metadata).\n   - Identifier l'action demandée (envoi, réponse, récupération, suppression, gestion de labels, gestion de brouillons, gestion de threads).\n\n2. **Validation et Sélection de l'Outil Approprié**\n   - Vérifier les autorisations et la validité de la demande.\n   - Sélectionner l'outil Gmail approprié parmi ceux intégrés via n8n, en s'assurant que la séquence d'actions respecte l'ordre défini.\n\n3. **Préparation de la Requête**\n   - Structurer les paramètres requis pour l'outil (destinataires, contenu, labels, identifiants de thread ou de brouillon, etc.).\n   - Générer une commande ou requête conforme aux API de Gmail via n8n.\n\n4. **Exécution de l'Action**\n   - Lancer l'outil sélectionné avec les paramètres préparés.\n   - Suivre la séquence d'exécution pour garantir que chaque étape s’enchaîne correctement (par exemple, envoyer l'email puis mettre à jour le thread si nécessaire).\n\n5. **Vérification et Retour d'Information**\n   - Confirmer la réussite de l'action (retour des codes de statut ou des confirmations de succès).\n   - En cas d'erreur, identifier le point de défaillance et déclencher un processus de reprise ou d'alerte.\n   - Communiquer le résultat de l'action à l'utilisateur ou au système de monitoring interne.\n\n6. **Archivage et Journalisation**\n   - Enregistrer l'ensemble des actions et métadonnées pour une traçabilité complète.\n   - Mettre à jour les logs et les historiques d'actions pour faciliter les audits futurs.\n\nCONTRAINTES\n- La suite d'étape à effectuer doit être dans un ordre logique \nExemple : Regarder si besoin d'envoyer de pieces jointes brouillon/mail -> Récuperer piece jointes -> Envoyer brouillon avec piece jointes\n- Respect strict des règles de sécurité et confidentialité des données de l'entreprise.\n- Gestion des erreurs et des exceptions pour éviter toute perte de données ou dysfonctionnement du système.\n- Limitation des actions automatiques selon les autorisations prédéfinies (droits d'accès restreints pour certaines opérations sensibles).\n- La séquence des outils doit être rigoureusement suivie pour garantir l'intégrité des opérations (chaque étape dépend des résultats de l'étape précédente).\n- Optimisation des performances afin de minimiser les délais de traitement tout en garantissant la fiabilité des actions.\n-les recherches fichiers doivent contenir une description globale de tous les fichiers à recherchées avec une hypothese de leur nom.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        480,
+        340
+      ],
+      "id": "dbb2ebff-611b-431a-8892-ae203392bf99",
+      "name": "Agent EMAIL",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.1,
+      "position": [
+        380,
+        540
+      ],
+      "id": "8cb4d5cf-3d7e-456e-907a-a131e34235a6",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "Vm2aEK1EsphLWx7X",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Cet outil te permet d'envoyer un mail ",
+        "sendTo": "={{$fromAI(\"email\",\"email de la personne a qui on envoit le mail\")}}",
+        "subject": "={{ $fromAI(\"sujet\") }}",
+        "emailType": "text",
+        "message": "={{ $fromAI(\"contenu_mail\") }}",
+        "options": {
+          "appendAttribution": false,
+          "ccList": "={{$fromAI(\"mail_cc\",\"mail des personnes en copie séparé par un virgule. Exemple : mail1,mail2\")}}",
+          "replyTo": "={{$fromAI(\"mail_reponse_a\",\"mail des personnes a qui ont réponds depuis un mail précedent séparé par une virgule. Exemple : mail1,mail2\")}}"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        620,
+        560
+      ],
+      "id": "d75245b2-1dce-4127-9742-98064094d896",
+      "name": "Envois Message",
+      "webhookId": "efa0876b-4ab6-4b45-b0c1-ec04dc626e2e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Cet outil te permet de répondre à un mail précedent",
+        "operation": "reply",
+        "messageId": "={{ $fromAI(\"message_id\",\"message_id du mail qu'on veut répondre\") }}",
+        "emailType": "text",
+        "message": "={{$fromAI(\"contenu_reponse\")}}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        780,
+        560
+      ],
+      "id": "f610f786-96d6-4da5-bf43-cbffa9e20cda",
+      "name": "Repondre a un Message",
+      "webhookId": "57a1fd9a-e230-4c2e-ac71-b9742dcde3ca",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Cet outil te permet de récuperer plusieurs messages en fonction de paramètres (définit ou pas): \n- Période (début et fin)\n- Mail envoyé d'une personne précise",
+        "operation": "getAll",
+        "filters": {
+          "receivedAfter": "={{ $fromAI(\"recu_apres\",\"récuperation de tous les messages apres cette date\") }}",
+          "receivedBefore": "={{ $fromAI(\"recu_avant\",\"récuperation de tous les messages avant cette date\") }}",
+          "sender": "={{$fromAI(\"mail_envoyeur\",\"récuperation de tous les messages envoyés par ce mail\")}}"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        940,
+        560
+      ],
+      "id": "9f33e2e2-5439-4fb0-8114-817226a7f364",
+      "name": "Recuperer Plusieurs Messages",
+      "webhookId": "846780ea-4d50-4fc5-815c-4a6ed6a272f1",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Cet outil te permet de récuperer un mail précis",
+        "operation": "get",
+        "messageId": "={{ $fromAI(\"message_id\",\"message_id de l'email qu'on veut récuperer\") }}"
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        1100,
+        560
+      ],
+      "id": "235a741e-b72e-42b9-8bd4-5d115ddf76e9",
+      "name": "Recuperer Message",
+      "webhookId": "705367d5-5a84-4181-b8ce-3b90d5a47a99",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Cet outil te permet de supprimer un mail précisement",
+        "operation": "delete",
+        "messageId": "={{ $fromAI(\"message_id\",\"message_id du mail qu'on veut supprimer\") }}"
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        1260,
+        560
+      ],
+      "id": "bc1d3da1-098b-4012-ac02-2aa7df941c31",
+      "name": "Supprimer Message",
+      "webhookId": "49b8c876-b37f-4d03-a727-0e79ff3fd90c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Cet outil te permet d'ajouter un Label sur un Thread",
+        "resource": "thread",
+        "operation": "addLabels",
+        "threadId": "={{$fromAI(\"thread_id\",\"thread_id du thread sur lequelle le label doit être mis\")}}",
+        "labelIds": "={{ $fromAI(\"liste_labels\",\"liste des labels a mettre sur le thread. La liste doit contenir chaque label_id pertinent pour le thread\") }}"
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        620,
+        940
+      ],
+      "id": "80009ee6-5a09-4839-a1c4-1c5200168520",
+      "name": "Ajouter Label sur Thread",
+      "webhookId": "08b98d28-153e-4429-be8f-fd23027be9d5",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Cet outil te permet de récuperer plusieurs Label afin de pouvoir les utiliser",
+        "resource": "label"
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        620,
+        740
+      ],
+      "id": "113b5c5b-c7a8-4bf3-b7b6-37ea5e7910ab",
+      "name": "Recuperer Plusieurs Label",
+      "webhookId": "d7844d5d-ef5e-449d-a3ce-3b7111cccf84",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Cet outil te permet de récuperer un label précis",
+        "resource": "label",
+        "operation": "get",
+        "labelId": "={{$fromAI(\"label_id\",\"label_id du label à récuperer précisement\")}}"
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        780,
+        740
+      ],
+      "id": "fd80286c-4ad1-4110-9864-44ac44c3963e",
+      "name": "Recuperer Label",
+      "webhookId": "f6d11c49-f7fd-4abb-bad2-0442cf9b567c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Cet outil te permet de créer un label précis pour les mails",
+        "resource": "label",
+        "operation": "create",
+        "name": "={{$fromAI(\"nom_label\")}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        940,
+        740
+      ],
+      "id": "2097a566-1c19-458b-b453-81680a42b280",
+      "name": "Creer Label",
+      "webhookId": "c5561b98-0ee2-4b99-9ea4-4fe8e8898716",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Cet outil te permet de suppriemr un label précis",
+        "resource": "label",
+        "operation": "delete",
+        "labelId": "={{$fromAI(\"label_id\",\"label_id du label que tu dois supprimer\")}}"
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        1100,
+        740
+      ],
+      "id": "c9f8db95-0962-47b4-937a-88a56dc98884",
+      "name": "Supprimer Label",
+      "webhookId": "9b951776-2a44-43dc-b3b6-d97154348130",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Cet outil te permet de récuperer un thread précis",
+        "resource": "thread",
+        "operation": "get",
+        "threadId": "={{$fromAI(\"thread_id\",\"thread_id du thread à récuperer précisement\")}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        780,
+        920
+      ],
+      "id": "7021704a-a8b1-4b80-9cbc-61b295a19fb9",
+      "name": "Recuperer Thread",
+      "webhookId": "7a044d86-267e-46ac-8d8a-7c57139c5345",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Cet outil te permet de supprimer un ou des labels sur un tread",
+        "resource": "thread",
+        "operation": "removeLabels",
+        "threadId": "={{$fromAI(\"thread_id\",\"thread_id du thread ou l'on supprimer l'un ou les labels\")}}",
+        "labelIds": "={{ $fromAI(\"liste_label_a_supprimer\",\"liste des labels à supprimer sur le thread. Doit contenir les labels_id de chaque label à supprimer\")}}"
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        940,
+        920
+      ],
+      "id": "f26437cc-3fda-4d7a-a2a8-2ec6ebb90102",
+      "name": "Supprimer Labels sur Thread",
+      "webhookId": "2f1b5e57-7566-453a-a4a6-4717ee8aad45",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Cet outil te permet de répondre à un Thread",
+        "resource": "thread",
+        "operation": "reply",
+        "threadId": "={{$fromAI(\"thread_id\",\"thread_id du thread qui doit être répondu par le message\")}}",
+        "message": "={{$fromAI(\"contenu_reponse_thread\",\"réponse au thread\")}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        1100,
+        920
+      ],
+      "id": "8a986472-2f4f-4dbf-b7cb-620b89e5664c",
+      "name": "Repond a un Thread",
+      "webhookId": "1000532a-fb7f-4ad9-88c7-beff9bb75dd4",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Cet outil permet de jeter un thread à la poubelle",
+        "resource": "thread",
+        "operation": "trash",
+        "threadId": "={{$fromAI(\"thread_id\",\"thread_id du thread a jeter à la poubelle\")}}"
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        1280,
+        920
+      ],
+      "id": "540221da-7755-4071-9ca3-f499caafa0ee",
+      "name": "Jeter Poubelle Thread",
+      "webhookId": "83099042-0b95-45e8-8e4b-ef9ab3782ad3",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Cet outil te permet de supprimer un thread",
+        "resource": "thread",
+        "operation": "delete",
+        "threadId": "={{ $fromAI(\"thread_id\",\"thread_id du thread que tu dois supprimer\") }}"
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        1440,
+        920
+      ],
+      "id": "a6ee3801-63cd-43ab-b428-81d964d82b51",
+      "name": "Supprimer Thread",
+      "webhookId": "a498a697-4310-4afc-8953-70f361234675",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Cet outil te permet de récuperer plusieurs Threads en fonction de paramatres (défini ou pas) :\n-Période avec une date de début et une date de fin",
+        "resource": "thread",
+        "filters": {
+          "receivedAfter": "={{ $fromAI(\"recu_apres\",\"récuperation de tous les threads apres cette date\") }}",
+          "receivedBefore": "={{ $fromAI(\"recu_avant\",\"récuperation de tous les threads avant cette date\") }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        1600,
+        920
+      ],
+      "id": "4ffebe2d-2636-49d6-b017-329193c77255",
+      "name": "Recuperer Plusieurs Threads",
+      "webhookId": "63d69775-8e06-471a-8f29-a3c461b93549",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Cet outil te permet de marque un mail comme non lus",
+        "operation": "markAsUnread",
+        "messageId": "={{$fromAI(\"message_id\",\"message_id du message a marquer comme non lus\")}}"
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        1440,
+        560
+      ],
+      "id": "ad0cfc0b-e33a-4af8-a764-956fdd5b2187",
+      "name": "Marquer Message Non Lus",
+      "webhookId": "33e82a53-8a1b-453c-ba5f-3701a8291363",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Cet outil te permet de marque un message comme lus",
+        "operation": "markAsRead",
+        "messageId": "={{$fromAI(\"message_id\",\"message_id du message a marquer comme lus\")}}"
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        1620,
+        560
+      ],
+      "id": "e3a9e6c0-2d59-4400-8b3a-d68fa6e49582",
+      "name": "Marque Message Lus",
+      "webhookId": "1635e597-ecd2-47ce-b4bf-df90ccc3074c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Cet outil te permet de créer un brouillon à envoyer à une personne,répondre à un mail ou un thread",
+        "resource": "draft",
+        "subject": "={{$fromAI(\"titre_brouillon\")}}",
+        "message": "={{$fromAI(\"contenu_brouillon\")}}",
+        "options": {
+          "replyTo": "={{ $fromAI(\"envois_reponse_a\",\"les mails à qui est adressé ce brouillon de réponse séparé par des virgules. Exemple: mail1,mail2\") }}",
+          "threadId": "={{$fromAI(\"thread_id\",\"thread_id du thread auquelle on envoit le brouillon\")}}",
+          "sendTo": "={{$fromAI(\"receveurs_brouillon_email\",\"les mails a qui est adressé ce brouillon séparé par des virgules, Exemple : mail1,mail2\")}}"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        1260,
+        740
+      ],
+      "id": "7cf50607-096b-4b68-9e9f-17ded7fc5d4f",
+      "name": "Creer Brouillon",
+      "webhookId": "3c2832b5-e047-4e7a-98c9-cfab1ee03edf",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Cet outil te permet de récuperer pluieurs brouillons ",
+        "resource": "draft",
+        "operation": "getAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        1420,
+        740
+      ],
+      "id": "f4b81c81-da81-454b-a685-740d8f6fb589",
+      "name": "Recuperer Plusieurs Brouillons",
+      "webhookId": "bba59eea-38f8-44df-9d86-cb6c6dd90c48",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Cet outil te permet de récuperer un brouillon précis",
+        "resource": "draft",
+        "operation": "get",
+        "messageId": "={{$fromAI(\"draft_id\",\"draft_id du brouillon à récuperer précisement\")}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        1580,
+        740
+      ],
+      "id": "11f96254-bdb4-499d-b2a4-b4a9af081fad",
+      "name": "Recuperer Brouillon",
+      "webhookId": "e3be2244-958e-4eb7-8ead-e0b6ca43e1c7",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Cet outil te permet de supprimer un brouillon précis",
+        "resource": "draft",
+        "operation": "delete",
+        "messageId": "={{$fromAI(\"draft_id\",\"draft_id du brouillon qui doit être supprimer précisement\")}}"
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        1760,
+        740
+      ],
+      "id": "fb465a03-ebf8-421c-9e33-81bb0b32a41c",
+      "name": "Supprimer Brouillon",
+      "webhookId": "0500286b-6923-45f7-ad38-744c28ee317a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YbuvvgEKl3e2vuJZ",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"status\": \"echec\",\n  \"desc\": \"echec de l'agent Email\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1060,
+        340
+      ],
+      "id": "62bf4bd9-40d2-4aae-bb04-733d6c646ffd",
+      "name": "Reponse Erreur"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "54bbc7f7-4acb-4bdd-9071-1a8674efd9bb",
+              "name": "reponse",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1040,
+        120
+      ],
+      "id": "69c65df2-f4da-48b7-ac7d-f4a85e5a7b89",
+      "name": "Reponse Succes"
+    }
+  ],
+  "pinData": {
+    "Workflow Input Trigger": [
+      {
+        "json": {
+          "action": "Créer un brouillon de réponse pour  benoit.ferrere11@gmail.com concernant des choux a la creme"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Workflow Input Trigger": {
+      "main": [
+        [
+          {
+            "node": "Agent EMAIL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent EMAIL",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envois Message": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent EMAIL",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Repondre a un Message": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent EMAIL",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recuperer Plusieurs Messages": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent EMAIL",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recuperer Message": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent EMAIL",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supprimer Message": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent EMAIL",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ajouter Label sur Thread": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent EMAIL",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recuperer Plusieurs Label": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent EMAIL",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recuperer Label": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent EMAIL",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Creer Label": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent EMAIL",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supprimer Label": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent EMAIL",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recuperer Thread": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent EMAIL",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supprimer Labels sur Thread": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent EMAIL",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Repond a un Thread": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent EMAIL",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jeter Poubelle Thread": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent EMAIL",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supprimer Thread": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent EMAIL",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recuperer Plusieurs Threads": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent EMAIL",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marquer Message Non Lus": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent EMAIL",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marque Message Lus": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent EMAIL",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Creer Brouillon": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent EMAIL",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recuperer Plusieurs Brouillons": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent EMAIL",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recuperer Brouillon": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent EMAIL",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supprimer Brouillon": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent EMAIL",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent EMAIL": {
+      "main": [
+        [
+          {
+            "node": "Reponse Succes",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reponse Erreur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3cdf14b0-76ce-40a5-8c83-19df4fa081d1",
+  "meta": {
+    "templateId": "VMiAxXa3lCAizGB5f7dVZQSFfg3FtHkdTKvLuupqBls=",
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3c2ea20af5bac13bd16313e89630741b71c0832df524fb17e56957cfeb36ac2a"
+  },
+  "id": "6AdeogOIOeeWDfMX",
+  "tags": [
+    {
+      "createdAt": "2025-02-02T16:12:46.338Z",
+      "updatedAt": "2025-02-02T16:12:46.338Z",
+      "id": "pgPPv7eGCTdusX4U",
+      "name": "Projet BRUCELEC"
+    }
+  ]
+}
